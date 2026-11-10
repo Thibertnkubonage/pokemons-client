@@ -71,7 +71,26 @@ export default function Home() {
   const ajouterPokemon = async (e: any) => {
     e.preventDefault(); if (!newName) return;
     const np: Pokemon = { id: Date.now(), name: newName, type: newType, types: [newType], hp: newHp, attack: 50, defense: 50, image: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png` };
-    try { const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/pokemons`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newName, type: newType, hp: newHp }) }); if (res.ok) { const saved = await res.json(); setPokemons([...pokemons, saved]); } else setPokemons([...pokemons, np]); } catch { setPokemons([...pokemons, np]); }
+    try {
+  const token = localStorage.getItem('token');
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/pokemons`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ name: newName, type: newType, hp: newHp })
+  });
+
+  if (res.ok) {
+    const saved = await res.json();
+    setPokemons([...pokemons, saved]);
+  } else {
+    alert('Tu dois être connecté pour créer un Pokémon');
+  }
+} catch {
+  alert('Erreur, tu dois être connecté');
+}
     setNewName(''); setNewHp(50); setShowForm(false); playSound(true); alert(newName + ' ajouté ! 🎉');
   };
 
