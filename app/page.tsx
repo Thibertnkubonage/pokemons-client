@@ -149,16 +149,7 @@ export default function Home() {
         <p className={`text-center mt-2 mb-8 ${dark ? 'text-zinc-400' : 'text-zinc-600'}`}>Ton Pokédex personnel • {pokemons.length} Pokémons • ⭐ {favoris.length} Favoris</p>
 
         <div className="flex flex-wrap gap-3 justify-center mb-6">
-          <button
-  onClick={() => setVoirFavorisSeulement(!voirFavorisSeulement)}
-  className={`px-5 py-2 rounded-full font-bold ${
-    voirFavorisSeulement
-      ? 'bg-purple-400 text-black'
-      : 'bg-purple-900 text-white'
-  }`}
->
-  {voirFavorisSeulement ? '⭐ Voir Tous' : '⭐ Voir que mes Favoris'}
-</button>
+          <button onClick={() => setVoirFavorisSeulement(!voirFavorisSeulement)} className={`px-5 py-2 rounded-full font-bold ${ voirFavorisSeulement ? 'bg-purple-400 text-black' : 'bg-purple-900 text-white' }`} > {voirFavorisSeulement ? '⭐ Voir Tous' : '⭐ Voir que mes Favoris'} </button>
           <button onClick={() => setShowForm(!showForm)} className={`px-5 py-2 rounded-full font-bold ${showForm ? 'bg-zinc-700 text-white' : 'bg-green-500 text-black'}`}>{showForm ? '❌ Fermer' : '➕ Ajouter un Pokémon'}</button>
           <button onClick={() => setShowCombat(!showCombat)} className={`px-5 py-2 rounded-full font-bold ${showCombat ? 'bg-zinc-700 text-white' : 'bg-purple-600 text-white'}`}>{showCombat ? '❌ Fermer Combat' : '⚔️ MODE COMBAT'}</button>
           <button onClick={() => { localStorage.removeItem('token'); window.location.reload(); }} className="px-5 py-2 rounded-full font-bold bg-red-600 text-white">🚶‍♂️ Déconnexion</button>
