@@ -87,9 +87,11 @@ export default function Home() {
     setPokemons([...pokemons, saved]);
   } else {
     alert('Tu dois être connecté pour créer un Pokémon');
+    return; 
   }
 } catch {
   alert('Erreur, tu dois être connecté');
+  return;
 }
     setNewName(''); setNewHp(50); setShowForm(false); playSound(true); alert(newName + ' ajouté ! 🎉');
   };
