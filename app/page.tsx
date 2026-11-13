@@ -103,22 +103,21 @@ const seConnecter = async (e: any) => {
 const ajouterPokemon = async (e: any) => {
   e.preventDefault(); if (!newName) return;
   
-  // On relit le token à chaque fois, on ne se fie pas au useState
   const vraiToken = localStorage.getItem('token');
-  console.log("Token envoyé:", vraiToken?.slice(0, 20));
-  
   if (!vraiToken) {
     alert('Tu dois être connecté pour créer un Pokémon');
     return;
   }
 
+  // Ton backend veut LEVEL, pas HP. On envoie ton HP comme level
+  // On le bloque entre 1 et 100 pour respecter le DTO
+  const level = Math.min(100, Math.max(1, newHp));
+
   const body = { 
     name: newName, 
     type: newType, 
-    types: [newType], 
-    hp: newHp, 
-    attack: 50, 
-    defense: 50 
+    level: level,
+    imageUrl: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png`
   };
   console.log("Body envoyé:", body);
 
@@ -136,7 +135,9 @@ const ajouterPokemon = async (e: any) => {
     console.log("Réponse création:", res.status, data);
 
     if (res.ok) {
-      setPokemons([...pokemons, data]);
+      // Le backend renvoie level, ton affichage attend hp, on convertit
+      const pourAffichage = { ...data, hp: data.level ?? level, id: data.id ?? Date.now() };
+      setPokemons([...pokemons, pourAffichage]);
       setNewName(''); setNewHp(50); setShowForm(false); playSound(true); 
       alert(newName + ' ajouté ! 🎉');
     } else {
