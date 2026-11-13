@@ -102,29 +102,50 @@ const seConnecter = async (e: any) => {
 
 const ajouterPokemon = async (e: any) => {
   e.preventDefault(); if (!newName) return;
-  const np: Pokemon = { id: Date.now(), name: newName, type: newType, types: [newType], hp: newHp, attack: 50, defense: 50, image: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png` };
-    try {
-  // on utilise le token déjà chargé, pas besoin de relire
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/pokemons`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
-    body: JSON.stringify({ name: newName, type: newType, hp: newHp })
-  });
-
-  if (res.ok) {
-    const saved = await res.json();
-    setPokemons([...pokemons, saved]);
-  } else {
+  
+  // On relit le token à chaque fois, on ne se fie pas au useState
+  const vraiToken = localStorage.getItem('token');
+  console.log("Token envoyé:", vraiToken?.slice(0, 20));
+  
+  if (!vraiToken) {
     alert('Tu dois être connecté pour créer un Pokémon');
-    return; 
+    return;
   }
-} catch {
-  alert('Erreur, tu dois être connecté');
-  return;
-}
+
+  const body = { 
+    name: newName, 
+    type: newType, 
+    types: [newType], 
+    hp: newHp, 
+    attack: 50, 
+    defense: 50 
+  };
+  console.log("Body envoyé:", body);
+
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/pokemons`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${vraiToken}`
+      },
+      body: JSON.stringify(body)
+    });
+
+    const data = await res.json().catch(() => ({}));
+    console.log("Réponse création:", res.status, data);
+
+    if (res.ok) {
+      setPokemons([...pokemons, data]);
+      setNewName(''); setNewHp(50); setShowForm(false); playSound(true); 
+      alert(newName + ' ajouté ! 🎉');
+    } else {
+      alert('Erreur backend: ' + JSON.stringify(data));
+    }
+  } catch {
+    alert('Erreur, tu dois être connecté');
+  }
+};
 
 setNewName(''); setNewHp(50); setShowForm(false); playSound(true); alert(newName + ' ajouté ! 🎉');
   };
