@@ -49,6 +49,10 @@ export default function Home() {
   const [showForm, setShowForm] = useState(false);
   const [newName, setNewName] = useState(''); const [newType, setNewType] = useState('fire'); const [newHp, setNewHp] = useState(50);
   const [dark, setDark] = useState(true);
+  const [token, setToken] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showLogin, setShowLogin] = useState(false);
 
   // COMBAT
   const [showCombat, setShowCombat] = useState(false);
@@ -68,11 +72,34 @@ export default function Home() {
   const toggleFavori = (id: any) => { let n: any[]; if (favoris.includes(id)) n = favoris.filter(f => f !== id); else { n = [...favoris, id]; playSound(); } setFavoris(n); localStorage.setItem('mes-favoris', JSON.stringify(n)); };
   useEffect(() => { fetch(`${process.env.NEXT_PUBLIC_API_URL}/pokemons`).then(r => r.json()).then(data => { const list = Array.isArray(data) ? data : data.pokemons || data.data || []; setPokemons(list); setLoading(false); }).catch(() => setLoading(false)); }, []);
 
-  const ajouterPokemon = async (e: any) => {
-    e.preventDefault(); if (!newName) return;
-    const np: Pokemon = { id: Date.now(), name: newName, type: newType, types: [newType], hp: newHp, attack: 50, defense: 50, image: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png` };
+  useEffect(() => {
+  const t = localStorage.getItem('token');
+  if (t) setToken(t);
+}, []);
+
+const seConnecter = async (e: any) => {
+  e.preventDefault();
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  });
+  const data = await res.json();
+  if (res.ok && data.token) {
+    localStorage.setItem('token', data.token);
+    setToken(data.token);
+    setShowLogin(false);
+    alert('Connecté ! 🎉 Tu peux ajouter maintenant');
+  } else {
+    alert('Email ou mot de passe incorrect');
+  }
+};
+
+const ajouterPokemon = async (e: any) => {
+  e.preventDefault(); if (!newName) return;
+  const np: Pokemon = { id: Date.now(), name: newName, type: newType, types: [newType], hp: newHp, attack: 50, defense: 50, image: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png` };
     try {
-  const token = localStorage.getItem('token');
+  // on utilise le token déjà chargé, pas besoin de relire
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/pokemons`, {
     method: 'POST',
     headers: {
@@ -93,7 +120,8 @@ export default function Home() {
   alert('Erreur, tu dois être connecté');
   return;
 }
-    setNewName(''); setNewHp(50); setShowForm(false); playSound(true); alert(newName + ' ajouté ! 🎉');
+
+setNewName(''); setNewHp(50); setShowForm(false); playSound(true); alert(newName + ' ajouté ! 🎉');
   };
 
   const startCombat = () => {
@@ -152,8 +180,20 @@ export default function Home() {
           <button onClick={() => setVoirFavorisSeulement(!voirFavorisSeulement)} className={`px-5 py-2 rounded-full font-bold ${ voirFavorisSeulement ? 'bg-purple-400 text-black' : 'bg-purple-900 text-white' }`} > {voirFavorisSeulement ? '⭐ Voir Tous' : '⭐ Voir que mes Favoris'} </button>
           <button onClick={() => setShowForm(!showForm)} className={`px-5 py-2 rounded-full font-bold ${showForm ? 'bg-zinc-700 text-white' : 'bg-green-500 text-black'}`}>{showForm ? '❌ Fermer' : '➕ Ajouter un Pokémon'}</button>
           <button onClick={() => setShowCombat(!showCombat)} className={`px-5 py-2 rounded-full font-bold ${showCombat ? 'bg-zinc-700 text-white' : 'bg-purple-600 text-white'}`}>{showCombat ? '❌ Fermer Combat' : '⚔️ MODE COMBAT'}</button>
-          <button onClick={() => { localStorage.removeItem('token'); window.location.reload(); }} className="px-5 py-2 rounded-full font-bold bg-red-600 text-white">🚶‍♂️ Déconnexion</button>
+          {token ? (
+            <button onClick={() => { localStorage.removeItem('token'); setToken(''); window.location.reload(); }} className="px-5 py-2 rounded-full font-bold bg-red-600 text-white">🚶‍♂️ Déconnexion</button>) : (
+            <button onClick={() => setShowLogin(!showLogin)} className="px-5 py-2 rounded-full font-bold bg-blue-600 text-white">{showLogin ? '❌ Fermer' : '🔑 Connexion'}</button>
+          )}
         </div>
+
+        {showLogin && !token && (
+          <form onSubmit={seConnecter} className={`max-w-md mx-auto border rounded-3xl p-5 mb-8 space-y-3 ${cardBg}`}>
+            <h3 className="font-bold text-xl text-center">Connexion</h3>
+            <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" className="w-full bg-zinc-800 text-white rounded-xl px-4 py-2 outline-none" />
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Mot de passe" className="w-full bg-zinc-800 text-white rounded-xl px-4 py-2 outline-none" />
+            <button className="w-full bg-blue-600 text-white font-bold py-2 rounded-xl">Se connecter</button>
+          </form>
+)}
 
         {showForm && (<form onSubmit={ajouterPokemon} className={`max-w-md mx-auto border rounded-3xl p-5 mb-8 space-y-3 ${cardBg}`}><h3 className="font-bold text-xl text-center">Nouveau Pokémon</h3><input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Nom : Ex: Rayquaza" className="w-full bg-zinc-800 text-white rounded-xl px-4 py-2 outline-none" /><select value={newType} onChange={e => setNewType(e.target.value)} className="w-full bg-zinc-800 text-white rounded-xl px-4 py-2"><option value="fire">🔥 Feu</option><option value="water">💧 Eau</option><option value="grass">🌿 Plante</option><option value="electric">⚡ Électrique</option><option value="psychic">🔮 Psy</option><option value="dragon">🐉 Dragon</option></select><div className="flex gap-2 items-center"><span>HP ❤️</span><input type="number" value={newHp} onChange={e => setNewHp(Number(e.target.value))} className="flex-1 bg-zinc-800 text-white rounded-xl px-4 py-2" /></div><button className="w-full bg-yellow-400 text-black font-bold py-2 rounded-xl">Ajouter !</button></form>)}
 
