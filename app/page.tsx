@@ -79,19 +79,24 @@ export default function Home() {
 
 const seConnecter = async (e: any) => {
   e.preventDefault();
+  console.log("Tentative avec:", email);
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password })
   });
   const data = await res.json();
-  if (res.ok && data.token) {
-    localStorage.setItem('token', data.token);
-    setToken(data.token);
+  console.log("Réponse backend:", res.status, data);
+  
+  const leToken = data.token || data.access_token || data.accessToken || data.jwt;
+  
+  if (res.ok && leToken) {
+    localStorage.setItem('token', leToken);
+    setToken(leToken);
     setShowLogin(false);
     alert('Connecté ! 🎉 Tu peux ajouter maintenant');
   } else {
-    alert('Email ou mot de passe incorrect');
+    alert('Erreur backend: ' + JSON.stringify(data));
   }
 };
 
