@@ -302,9 +302,14 @@ export default function Home() {
             {filtered.map((p, index) => {
               const types = getTypes(p);
               return (
-                <div key={String(p.id)} onClick={() => { setSelected(p); playSound(); }} className={`${cardBg} border rounded-3xl p-4 hover:scale-[1.03] hover:border-yellow-400 transition cursor-pointer overflow-hidden relative`}>
-                  <button onClick={e => { e.stopPropagation(); supprimerPokemon(p.id, p.name); }} className="absolute top-2 right-2 z-10 bg-red-600 w-7 h-7 rounded-full text-sm">🗑️</button>
-                  <div className="flex justify-between items-start"><span className="text-zinc-500 font-bold">#{String(index + 1).padStart(3, "0")}</span><button onClick={e => { e.stopPropagation(); toggleFavori(p.id); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px' }}>{favoris.includes(p.id) ? '⭐' : '☆'}</button></div>
+                <div key={String(p.id)} onClick={() => { setSelected(p); playSound(); }} className={`${cardBg} border rounded-3xl p-4 hover:scale-[1.03] hover:border-yellow-400 transition cursor-pointer overflow-hidden`}>
+                  <div className="flex justify-between items-start">
+                    <span className="text-zinc-500 font-bold">#{String(index + 1).padStart(3, "0")}</span>
+                    <div className="flex gap-1 items-center">
+                      <button onClick={e => { e.stopPropagation(); toggleFavori(p.id); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px' }}>{favoris.includes(p.id) ? '⭐' : '☆'}</button>
+                      <button onClick={e => { e.stopPropagation(); supprimerPokemon(p.id, p.name); }} className="bg-red-600 w-7 h-7 rounded-full text-sm flex items-center justify-center">🗑️</button>
+                    </div>
+                  </div>
                   <img src={getImage(p)} alt={p.name} className="w-36 h-36 mx-auto object-contain" />
                   <h2 className="text-xl font-bold capitalize text-center mt-2">{p.name}</h2>
                   <div className="flex gap-2 justify-center mt-3 flex-wrap">{types.map(t => <span key={t} className={`px-3 py-1 rounded-full text-xs font-bold capitalize text-white ${typeColors[t.toLowerCase()] || "bg-zinc-600"}`}>{t}</span>)}</div>
