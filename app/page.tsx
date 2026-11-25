@@ -60,6 +60,8 @@ export default function Home() {
   const [newName, setNewName] = useState('');
   const [newType, setNewType] = useState('fire');
   const [newHp, setNewHp] = useState(50);
+  const [newImageId, setNewImageId] = useState(25);
+  const [newImageUrl, setNewImageUrl] = useState('');
   const [dark, setDark] = useState(true);
   const [token, setToken] = useState('');
   const [email, setEmail] = useState('');
@@ -82,6 +84,8 @@ export default function Home() {
   const fighter1 = idx1 >= 0 ? pokemons[idx1] : null;
   const fighter2 = idx2 >= 0 ? pokemons[idx2] : null;
 
+  const previewImage = newImageUrl.trim() || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${newImageId}.png`;
+
   useEffect(() => {
     const s = localStorage.getItem('mes-favoris');
     if (s) setFavoris(JSON.parse(s));
@@ -100,7 +104,6 @@ export default function Home() {
       .then(r => r.json())
       .then(data => {
         const list = Array.isArray(data) ? data : data.pokemons || data.data || [];
-        // On normalise : backend envoie level, affichage veut hp
         const normalized = list.map((p: any) => ({ ...p, hp: p.hp ?? p.level ?? 50 }));
         setPokemons(normalized);
         setLoading(false);
@@ -135,39 +138,26 @@ export default function Home() {
   const ajouterPokemon = async (e: any) => {
     e.preventDefault();
     if (!newName.trim()) return;
-
     const vraiToken = localStorage.getItem('token');
-    if (!vraiToken) {
-      alert('Tu dois être connecté pour créer un Pokémon');
-      return;
-    }
-
-    // Backend veut LEVEL (1-100), pas HP
+    if (!vraiToken) { alert('Tu dois être connecté pour créer un Pokémon'); return; }
     const level = Math.min(100, Math.max(1, newHp));
     const body = {
       name: newName.trim(),
       type: newType,
       level,
-      imageUrl: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png`
+      imageUrl: previewImage
     };
-    console.log("Body envoyé:", body);
-
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/pokemons`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${vraiToken}`
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${vraiToken}` },
         body: JSON.stringify(body)
       });
       const data = await res.json().catch(() => ({}));
-      console.log("Réponse création:", res.status, data);
-
       if (res.ok) {
         const pourAffichage = { ...data, hp: data.level ?? level, id: data.id ?? Date.now() };
         setPokemons(prev => [...prev, pourAffichage]);
-        setNewName(''); setNewHp(50); setShowForm(false);
+        setNewName(''); setNewHp(50); setNewImageId(25); setNewImageUrl(''); setShowForm(false);
         playSound(true);
         alert(newName + ' ajouté ! 🎉');
       } else {
@@ -175,6 +165,29 @@ export default function Home() {
       }
     } catch {
       alert('Erreur réseau, vérifie ta connexion');
+    }
+  };
+
+  const supprimerPokemon = async (id: any, name: string) => {
+    if (!confirm(`Supprimer ${name} ?`)) return;
+    const vraiToken = localStorage.getItem('token');
+    if (!vraiToken) { alert('Tu dois être connecté pour supprimer'); return; }
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/pokemons/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${vraiToken}` }
+      });
+      if (res.ok || res.status === 204) {
+        setPokemons(prev => prev.filter(p => String(p.id) !== String(id)));
+        setSelected(null);
+        playSound();
+        alert(`${name} supprimé ! 🗑️`);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert('Erreur suppression: ' + res.status + ' ' + JSON.stringify(data));
+      }
+    } catch {
+      alert('Erreur réseau');
     }
   };
 
@@ -188,17 +201,9 @@ export default function Home() {
 
   const attaquer = (qui: number) => {
     if (!fighter1 || !fighter2 || winner) return;
-    if (qui === 1) {
-      setAnim1('translate-x-10 scale-125 rotate-6');
-      setAnim2('animate-bounce -translate-x-4 scale-90');
-      setBoom('left');
-    } else {
-      setAnim2('-translate-x-10 scale-125 -rotate-6');
-      setAnim1('animate-bounce translate-x-4 scale-90');
-      setBoom('right');
-    }
+    if (qui === 1) { setAnim1('translate-x-10 scale-125 rotate-6'); setAnim2('animate-bounce -translate-x-4 scale-90'); setBoom('left'); }
+    else { setAnim2('-translate-x-10 scale-125 -rotate-6'); setAnim1('animate-bounce translate-x-4 scale-90'); setBoom('right'); }
     setTimeout(() => { setAnim1(''); setAnim2(''); setBoom(''); }, 500);
-
     const atk = qui === 1 ? (fighter1.attack || 50) : (fighter2.attack || 50);
     const def = qui === 1 ? (fighter2.defense || 20) : (fighter1.defense || 20);
     const degats = Math.max(5, atk - Math.floor(def / 2) + Math.floor(Math.random() * 20));
@@ -260,6 +265,10 @@ export default function Home() {
               <option value="fire">🔥 Feu</option><option value="water">💧 Eau</option><option value="grass">🌿 Plante</option><option value="electric">⚡ Électrique</option><option value="psychic">🔮 Psy</option><option value="dragon">🐉 Dragon</option>
             </select>
             <div className="flex gap-2 items-center"><span>HP ❤️</span><input type="number" min={1} max={100} value={newHp} onChange={e => setNewHp(Number(e.target.value))} className="flex-1 bg-zinc-800 text-white rounded-xl px-4 py-2" /></div>
+            <div className="flex gap-2 items-center"><span>🖼️ N° Image</span><input type="number" min={1} max={1025} value={newImageId} onChange={e => setNewImageId(Number(e.target.value))} className="flex-1 bg-zinc-800 text-white rounded-xl px-4 py-2" /></div>
+            <input value={newImageUrl} onChange={e => setNewImageUrl(e.target.value)} placeholder="Ou colle ton lien image ici (optionnel)" className="w-full bg-zinc-800 text-white rounded-xl px-4 py-2 outline-none" />
+            <div className="text-center"><p className="text-xs text-zinc-400 mb-1">Aperçu :</p><img src={previewImage} className="w-24 h-24 mx-auto object-contain" /></div>
+            <p className="text-xs text-center text-zinc-400">Ex: 1 = Bulbizarre, 6 = Dracaufeu, 25 = Pikachu, 150 = Mewtwo</p>
             <button className="w-full bg-yellow-400 text-black font-bold py-2 rounded-xl">Ajouter !</button>
           </form>
         )}
@@ -293,7 +302,8 @@ export default function Home() {
             {filtered.map((p, index) => {
               const types = getTypes(p);
               return (
-                <div key={String(p.id)} onClick={() => { setSelected(p); playSound(); }} className={`${cardBg} border rounded-3xl p-4 hover:scale-[1.03] hover:border-yellow-400 transition cursor-pointer overflow-hidden`}>
+                <div key={String(p.id)} onClick={() => { setSelected(p); playSound(); }} className={`${cardBg} border rounded-3xl p-4 hover:scale-[1.03] hover:border-yellow-400 transition cursor-pointer overflow-hidden relative`}>
+                  <button onClick={e => { e.stopPropagation(); supprimerPokemon(p.id, p.name); }} className="absolute top-2 right-2 z-10 bg-red-600 w-7 h-7 rounded-full text-sm">🗑️</button>
                   <div className="flex justify-between items-start"><span className="text-zinc-500 font-bold">#{String(index + 1).padStart(3, "0")}</span><button onClick={e => { e.stopPropagation(); toggleFavori(p.id); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px' }}>{favoris.includes(p.id) ? '⭐' : '☆'}</button></div>
                   <img src={getImage(p)} alt={p.name} className="w-36 h-36 mx-auto object-contain" />
                   <h2 className="text-xl font-bold capitalize text-center mt-2">{p.name}</h2>
@@ -319,6 +329,7 @@ export default function Home() {
               <div><div className="flex justify-between text-sm"><span>Défense 🛡️</span><span>{selected.defense || 50}</span></div><div className="bg-zinc-800 rounded-full h-3 overflow-hidden"><div className="bg-blue-500 h-3" style={{ width: `${Math.min((selected.defense || 50), 100)}%` }}></div></div></div>
             </div>
             <button onClick={() => toggleFavori(selected.id)} className="mt-6 w-full bg-yellow-400 text-black font-bold py-3 rounded-xl">{favoris.includes(selected.id) ? '⭐ Retirer des favoris' : '☆ Ajouter aux favoris'}</button>
+            <button onClick={() => supprimerPokemon(selected.id, selected.name)} className="mt-2 w-full bg-red-600 text-white font-bold py-3 rounded-xl">🗑️ Supprimer ce Pokémon</button>
           </div>
         </div>
       )}
